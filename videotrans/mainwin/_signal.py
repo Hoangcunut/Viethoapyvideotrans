@@ -1,6 +1,7 @@
 import json
 import shutil
 import time
+from queue import Empty
 
 from PySide6.QtCore import QThread, Signal
 
@@ -28,7 +29,7 @@ class UUIDSignalThread(QThread):
             
             if len(self.parent.win_action.obj_list) < 1:
                 if len(app_cfg.global_msg) > 0:
-                    self.uito.emit(json.dumps(app_cfg.global_msg.pop(0)))
+                    self.uito.emit(json.dumps(app_cfg.global_msg.popleft()))
                 self._remove_queue()
                 if app_cfg.exit_soft: return
                 time.sleep(0.1)
@@ -62,6 +63,8 @@ class UUIDSignalThread(QThread):
                     data = q.get_nowait()
                     if data:
                         self.uito.emit(json.dumps(data))
+                except Empty:
+                    pass
                 except Exception:
                     pass
                 finally:

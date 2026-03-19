@@ -1,5 +1,6 @@
 import json
 import time
+from queue import Empty
 
 from PySide6.QtCore import QThread, Signal
 
@@ -25,7 +26,7 @@ class SignThread(QThread):
                 time.sleep(0.1)
                 return
 
-            for uuid in self.uuid_list:
+            for uuid in list(self.uuid_list):
                 if app_cfg.exit_soft: return
                 if uuid in app_cfg.stoped_uuid_set:
                     try:
@@ -37,10 +38,7 @@ class SignThread(QThread):
                 if not q:
                     continue
                 try:
-                    if q.empty():
-                        time.sleep(0.1)
-                        continue
-                    data = q.get(block=True,timeout=0.1)
+                    data = q.get_nowait()
                     if not data:
                         continue
                     self.post(data)
@@ -51,5 +49,7 @@ class SignThread(QThread):
                         app_cfg.stoped_uuid_set.add(uuid)
                         app_cfg.uuid_logs_queue.pop(uuid,None)
                     q.task_done()
+                except Empty:
+                    continue
                 except Exception:
                     pass

@@ -108,7 +108,7 @@ class BaseTask(BaseCon):
                 f.write(txt)
         except Exception:
             raise
-        self._signal(text=Path(file).read_text(encoding='utf-8',errors="ignore"), type='replace_subtitle')
+        self._signal(text=txt, type='replace_subtitle')
         return True
 
     def _check_target_sub(self, source_srt_list, target_srt_list):

@@ -4,6 +4,39 @@
 
 `pyVideoTrans` là ứng dụng dịch video, tạo phụ đề, chuyển giọng nói thành văn bản và lồng tiếng AI. Dự án hỗ trợ cả giao diện đồ họa và dòng lệnh, phù hợp cho nhu cầu xử lý video đơn lẻ hoặc theo lô.
 
+## Cấu hình máy để cài và sử dụng
+
+### Cấu hình tối thiểu
+
+- Hệ điều hành: Windows 10/11 64-bit
+- CPU: 4 nhân trở lên
+- RAM: 8 GB
+- Ổ cứng trống: 20 GB trở lên
+- GPU: không bắt buộc, có thể chạy bằng CPU nhưng sẽ chậm
+- Phần mềm cần có khi chạy từ mã nguồn: Python `3.10` đến `3.12`, `FFmpeg`, `uv`
+
+### Cấu hình khuyến nghị
+
+- Hệ điều hành: Windows 10/11 64-bit
+- CPU: 6 đến 8 nhân trở lên
+- RAM: 16 GB trở lên
+- Ổ cứng trống: 50 GB trở lên nếu tải nhiều model
+- GPU: NVIDIA 6 GB VRAM trở lên để tăng tốc ASR/TTS, khuyến nghị 8 GB VRAM trở lên
+- Nếu dùng GPU NVIDIA theo hướng dẫn của dự án: nên có `CUDA 12.8` và `cuDNN 9.11`
+
+### Khi nào cần máy mạnh hơn
+
+- Xử lý video dài hoặc xử lý hàng loạt nhiều video
+- Dùng các model nhận dạng giọng nói lớn
+- Dùng voice cloning hoặc các mô hình TTS cục bộ
+- Vừa dịch, vừa lồng tiếng, vừa ghép video trên cùng một máy
+
+### Ghi chú
+
+- Nếu chỉ cần cài và dùng bản `.exe`, bạn không cần cài Python.
+- Nếu không có GPU NVIDIA, app vẫn dùng được nhưng thời gian xử lý sẽ lâu hơn đáng kể.
+- Dung lượng đĩa có thể tăng nhanh khi tải model, sinh file tạm và xuất video kết quả.
+
 ## Cách cài đặt nhanh
 
 ### Cách 1: Dùng bản đóng gói Windows

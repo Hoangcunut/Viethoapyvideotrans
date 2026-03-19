@@ -1,35 +1,56 @@
-# pyVideoTrans - Hướng dẫn Tiếng Việt
+# pyVideoTrans đã Việt hóa
 
-## Tổng quan
+`pyVideoTrans` là ứng dụng dịch video, tạo phụ đề, nhận dạng giọng nói và lồng tiếng AI. Repo này là bản mã nguồn đã được Việt hóa giao diện/tài liệu để thuận tiện cài đặt và sử dụng tại môi trường Việt Nam.
 
-`pyVideoTrans` là ứng dụng dịch video, tạo phụ đề, chuyển giọng nói thành văn bản và lồng tiếng AI. Dự án hỗ trợ cả giao diện đồ họa và dòng lệnh, phù hợp cho nhu cầu xử lý video đơn lẻ hoặc theo lô.
+## Tính năng chính
 
-## Cách cài đặt nhanh
+- Dịch video từ ngôn ngữ nguồn sang ngôn ngữ đích.
+- Tạo phụ đề từ audio/video.
+- Dịch phụ đề SRT.
+- Lồng tiếng AI với nhiều kênh TTS.
+- Hỗ trợ cả giao diện đồ họa và dòng lệnh.
+- Làm việc với nhiều nhà cung cấp ASR, dịch máy/LLM và TTS.
 
-### Cách 1: Dùng bản đóng gói Windows
+## Thành phần chính trong repo
 
-1. Tải bản mới nhất từ `Releases`.
-2. Giải nén vào một thư mục ngắn, không dấu và không có khoảng trắng nếu có thể. Ví dụ: `D:\pyVideoTrans`
+- `sp.py`: điểm vào giao diện đồ họa.
+- `cli.py`: điểm vào dòng lệnh.
+- `videotrans/`: mã nguồn chính của ứng dụng.
+- `docs/`: tài liệu bổ sung.
+- `tests/`: một số test tích hợp/liên quan translator.
+- `update_ffmpeg.bat`: script hỗ trợ cập nhật FFmpeg trên Windows.
+
+## Yêu cầu môi trường
+
+### Cấu hình máy
+
+- Tối thiểu: Windows 10/11 64-bit, CPU 4 nhân, RAM 8 GB, trống 20 GB.
+- Khuyến nghị: CPU 6 đến 8 nhân, RAM 16 GB+, GPU NVIDIA 6 đến 8 GB VRAM, trống 50 GB+.
+- Nếu chạy tác vụ dài, batch nhiều video, voice clone hoặc model lớn thì nên dùng máy mạnh hơn.
+
+### Phần mềm bắt buộc
+
+- Python `3.10`.
+- `FFmpeg` có trong `PATH`, hoặc đặt `ffmpeg.exe` và `ffprobe.exe` trong thư mục dự án.
+- `uv` để đồng bộ môi trường nhanh và ổn định.
+
+Lưu ý: `pyproject.toml` hiện ghim `requires-python = ">=3.10, <3.11"`, vì vậy nên dùng đúng Python 3.10 để tránh lệch dependency.
+
+## Cài đặt nhanh
+
+### Cách 1: dùng bản đóng gói Windows
+
+1. Tải bản phát hành `.zip` hoặc `.7z` từ trang Releases của dự án.
+2. Giải nén vào đường dẫn ngắn, không có dấu và hạn chế khoảng trắng.
 3. Chạy `sp.exe`.
 
-Lưu ý:
+Phù hợp nếu bạn chỉ muốn dùng ứng dụng mà không cần môi trường Python.
 
-- Không chạy trực tiếp bên trong file `.zip`.
-- Nếu muốn dùng GPU NVIDIA, cần cài `CUDA 12.8` và `cuDNN 9.11`.
-
-### Cách 2: Chạy từ mã nguồn
-
-Yêu cầu:
-
-- Python `3.10` đến `3.12`
-- `FFmpeg` có sẵn trong `PATH`, hoặc đặt `ffmpeg.exe` và `ffprobe.exe` vào thư mục dự án
-- Khuyến nghị dùng `uv`
-
-Lệnh cài đặt:
+### Cách 2: chạy từ mã nguồn
 
 ```bash
-git clone https://github.com/jianchang512/pyvideotrans.git
-cd pyvideotrans
+git clone https://github.com/Hoangcunut/Viethoapyvideotrans.git
+cd Viethoapyvideotrans
 uv sync
 ```
 
@@ -39,60 +60,60 @@ Khởi động giao diện:
 uv run sp.py
 ```
 
-Khởi động dòng lệnh:
+Xem trợ giúp CLI:
 
 ```bash
 uv run cli.py --help
 ```
 
-## Cách dùng cơ bản trên giao diện
+## Cách dùng
 
-1. Bấm `Select audio & video` để chọn video hoặc audio cần xử lý.
-2. Bấm `Save to..` để chọn thư mục lưu kết quả.
-3. Chọn `Speech language` là ngôn ngữ gốc của video.
-4. Chọn `Target lang` là ngôn ngữ đích.
-5. Chọn `Translate channel` nếu bạn muốn dịch phụ đề.
-6. Chọn `Dubbing channel` và `Dubbing role` nếu bạn muốn lồng tiếng.
-7. Bấm `Start` để bắt đầu.
+### Giao diện đồ họa
 
-Một số chế độ hay dùng:
+Luồng dùng cơ bản:
 
-- Dịch video tự động: chọn video, đặt ngôn ngữ nguồn/đích, chọn kênh dịch và TTS nếu cần.
-- Tạo phụ đề: chọn audio/video, chọn nhận dạng giọng nói, xuất ra SRT.
-- Dịch file SRT: dùng nhóm công cụ hoặc CLI để dịch hàng loạt.
-- Gộp video và phụ đề: dùng menu `Tools/Options`.
+1. Chọn file audio/video đầu vào.
+2. Chọn thư mục lưu kết quả.
+3. Chọn ngôn ngữ nguồn và ngôn ngữ đích.
+4. Chọn kênh nhận dạng giọng nói, dịch và lồng tiếng nếu cần.
+5. Bấm `Start` để chạy pipeline.
 
-## Vị trí cần cấu hình thêm
+### Dòng lệnh
 
-- API dịch: menu `Trans Settings`
-- API TTS: menu `TTS Settings`
-- API nhận dạng giọng nói: menu `ASR Settings`
-- Tinh chỉnh nâng cao: `Options`
+Ứng dụng hỗ trợ 4 nhóm tác vụ chính:
 
-## Ví dụ CLI
+- `stt`: nhận dạng giọng nói thành văn bản/phụ đề.
+- `tts`: tổng hợp giọng nói từ văn bản/phụ đề.
+- `sts`: dịch phụ đề.
+- `vtv`: dịch video trọn quy trình.
 
-### Dịch video
-
-```bash
-uv run cli.py --task vtv --name "./video.mp4" --source_language_code zh --target_language_code en
-```
-
-### Chuyển audio thành phụ đề
+Ví dụ:
 
 ```bash
 uv run cli.py --task stt --name "./audio.wav" --model_name large-v3
 ```
 
-## Lời khuyên khi dùng
+```bash
+uv run cli.py --task vtv --name "./video.mp4" --source_language_code zh --target_language_code en
+```
 
-- Nếu mới bắt đầu, hãy chạy bằng giao diện trước.
-- Nếu chỉ cần phụ đề, không nhất thiết phải bật TTS.
-- Nếu dùng API online, hãy kiểm tra proxy, key và quota trước.
-- Nếu gặp lỗi mô hình, thử xem mục `Solution to model download failure`.
+## Tài liệu liên quan
 
-## Tệp quan trọng trong repo
+- `docs/README_VI.md`: bản hướng dẫn tiếng Việt cũ/dự phòng.
+- `docs/README_CN.md`: README gốc theo tài liệu Trung văn.
+- `docs/language.md`: hướng dẫn thêm/chỉnh language pack.
+- `docs/googlecloud_tts.md`: ghi chú cấu hình Google Cloud TTS.
+- `docs/whisper_net_setup.md`: ghi chú tăng tốc/cấu hình thêm cho một số môi trường.
 
-- `sp.py`: điểm vào giao diện chính
-- `cli.py`: điểm vào dòng lệnh
-- `videotrans/language/vi.json`: gói ngôn ngữ Tiếng Việt
-- `README.md`: giới thiệu tổng quan
+## Ghi chú vận hành
+
+- Nếu không có GPU, ứng dụng vẫn chạy được nhưng sẽ chậm hơn đáng kể.
+- Một số kênh dịch/TTS/ASR cần API key hoặc cấu hình thêm trong giao diện cài đặt.
+- Nên giữ đường dẫn dự án và đường dẫn file đầu vào ngắn, ít ký tự đặc biệt để giảm lỗi FFmpeg/model.
+- Repo hiện là bản đã Việt hóa, nhưng lõi xử lý vẫn bám theo kiến trúc gốc của `pyVideoTrans`.
+
+## Thông tin dự án
+
+- Tên dự án: `pyVideoTrans`
+- Phiên bản trong repo hiện tại: `v3.98`
+- License: `GPL-3.0`

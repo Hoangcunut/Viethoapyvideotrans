@@ -3,9 +3,46 @@ import re
 import requests
 from videotrans.configure.config import ROOT_DIR,tr,app_cfg,settings,params,TEMP_DIR,logger,defaulelang,HOME_DIR
 from pathlib import Path
-from functools import lru_cache
 
 from videotrans.util import contants
+
+_JSON_CACHE = {}
+
+
+def _get_json_signature(file_path):
+    path = Path(file_path)
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return path.resolve().as_posix(), stat.st_mtime_ns, stat.st_size
+
+
+def _load_json_cached(file_path, default=None):
+    signature = _get_json_signature(file_path)
+    if not signature:
+        return {} if default is None else default
+
+    cache_key = signature[0]
+    cached = _JSON_CACHE.get(cache_key)
+    if cached and cached["signature"] == signature:
+        return cached["content"]
+
+    try:
+        content = json.loads(Path(file_path).read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError):
+        return {} if default is None else default
+
+    _JSON_CACHE[cache_key] = {"signature": signature, "content": content}
+    return content
+
+
+def _clear_json_cache(file_path):
+    try:
+        cache_key = Path(file_path).resolve().as_posix()
+    except OSError:
+        return
+    _JSON_CACHE.pop(cache_key, None)
 
 
 def get_elevenlabs_role(force=False, raise_exception=False):
@@ -13,10 +50,9 @@ def get_elevenlabs_role(force=False, raise_exception=False):
     jsonfile = f'{ROOT_DIR}/videotrans/voicejson/elevenlabs.json'
     namelist = ["No"]
     if help_misc.vail_file(jsonfile):
-        with open(jsonfile, 'r', encoding='utf-8') as f:
-            cache = json.loads(f.read())
-            for it in cache.values():
-                namelist.append(it['name'])
+        cache = _load_json_cached(jsonfile)
+        for it in cache.values():
+            namelist.append(it['name'])
     if not force and len(namelist) > 0:
         params['elevenlabstts_role'] = namelist
         return namelist
@@ -34,6 +70,7 @@ def get_elevenlabs_role(force=False, raise_exception=False):
 
         with open(jsonfile, 'w', encoding="utf-8") as f:
             f.write(json.dumps(result))
+        _clear_json_cache(jsonfile)
         params['elevenlabstts_role'] = namelist
         return namelist
     except Exception as e:
@@ -56,7 +93,7 @@ def get_vits_role():
 def get_piper_role():
     file_path=f"{ROOT_DIR}/videotrans/voicejson/piper.json"
     if Path(file_path).exists():
-        rolelist=json.loads(Path(file_path).read_text(encoding='utf-8'))
+        rolelist=_load_json_cached(file_path)
     else:
         rolelist={}
         from videotrans.translator import LANGNAME_DICT
@@ -70,19 +107,18 @@ def get_piper_role():
                 rolelist[tmp[0]]={"No":"No"}
             rolelist[tmp[0]][rolename]=rolename
         Path(file_path).write_text(json.dumps(rolelist,indent=4),encoding='utf-8')
+        _clear_json_cache(file_path)
     return rolelist
 
 def get_302ai():
 
     role_dict = get_azure_rolelist()
 
-
-    with open(ROOT_DIR + "/videotrans/voicejson/302.json", 'r', encoding='utf-8') as f:
-        ai302_voice_roles = json.loads(f.read())
-        _doubao = ai302_voice_roles.get("AI302_doubao", {})
-        _minimaxi = ai302_voice_roles.get("AI302_minimaxi", {})
-        _dubbingx = ai302_voice_roles.get("AI302_dubbingx", {})
-        _doubao_ja = ai302_voice_roles.get("AI302_doubao_ja", {})
+    ai302_voice_roles = _load_json_cached(ROOT_DIR + "/videotrans/voicejson/302.json")
+    _doubao = ai302_voice_roles.get("AI302_doubao", {})
+    _minimaxi = ai302_voice_roles.get("AI302_minimaxi", {})
+    _dubbingx = ai302_voice_roles.get("AI302_dubbingx", {})
+    _doubao_ja = ai302_voice_roles.get("AI302_doubao_ja", {})
     _openai=contants.OPENAITTS_ROLES.split(",")
     role_dict['zh'] = role_dict['zh'] | _doubao |_minimaxi|_dubbingx| {k:k for k in _openai}
     role_dict['ja'] = role_dict['ja'] |_doubao_ja
@@ -92,7 +128,7 @@ def get_302ai():
 # 字节火山语音合成角色
 def get_doubao_rolelist(role_name=None, langcode="zh"):
 
-    roledata=json.loads(Path(f'{ROOT_DIR}/videotrans/voicejson/doubao0.json').read_text(encoding='utf-8'))
+    roledata=_load_json_cached(f'{ROOT_DIR}/videotrans/voicejson/doubao0.json')
     
    
     if role_name:
@@ -106,7 +142,7 @@ def get_doubao_rolelist(role_name=None, langcode="zh"):
 
 def get_doubao2_rolelist(role_name=None, langcode="zh"):
 
-    roledata=json.loads(Path(f'{ROOT_DIR}/videotrans/voicejson/doubao2.json').read_text(encoding='utf-8'))
+    roledata=_load_json_cached(f'{ROOT_DIR}/videotrans/voicejson/doubao2.json')
     
    
     if role_name:
@@ -120,18 +156,16 @@ def get_doubao2_rolelist(role_name=None, langcode="zh"):
 
 
 #  get role by edge tts
-@lru_cache(maxsize=None)
 def get_edge_rolelist(role_name=None,locale=None):
 
     from . import help_misc
-    voice_list = {}
     voice_file=ROOT_DIR + "/videotrans/voicejson/edge_tts.json"
+    voice_list = {}
     if help_misc.vail_file(voice_file):
         try:
-            with open(voice_file,'r',encoding='utf-8') as f:
-                voice_list = json.loads(f.read())
-            for i,it in voice_list.items():
-                voice_list[i]={"No":"No"}|it
+            voice_list = {
+                i: {"No":"No"} | it for i, it in _load_json_cached(voice_file).items()
+            }
         except (OSError,json.JSONDecodeError):
             pass
     if role_name and locale:
@@ -141,23 +175,17 @@ def get_edge_rolelist(role_name=None,locale=None):
 
 def get_azure_rolelist(language=None,role_name=None):
     voice_file=ROOT_DIR + "/videotrans/voicejson/azure_voice_list.json"
-    voice_list=json.loads(Path(voice_file).read_text(encoding='utf-8'))
+    voice_list=_load_json_cached(voice_file)
     # 根据角色显示名字获取真实角色
     if language and role_name:
         return voice_list.get(language,{}).get(role_name)
     if role_name and (not language or language=='auto'):
         for it in voice_list.values():
-            for name,ro in it:
+            for name,ro in it.items():
                 if name==role_name:
                     return ro
         return None
-    try:
-        for k,it in voice_list.items():
-            it['No']='No'
-            voice_list[k]={"No":"No"}|it
-    except (OSError,json.JSONDecodeError):
-        pass
-    return voice_list
+    return {k: {"No":"No"} | it for k, it in voice_list.items()}
 
 def get_minimaxi_rolelist():
 
@@ -169,17 +197,16 @@ def get_minimaxi_rolelist():
         voice_file=ROOT_DIR + "/videotrans/voicejson/minimaxiio.json"
     if help_misc.vail_file(voice_file):
         try:
-            with open(voice_file,'r',encoding='utf-8') as f:
-                voice_list = json.loads(f.read())
-            for i,it in voice_list.items():
-                voice_list[i]={"No":"No"}|it
+            voice_list = {
+                i: {"No":"No"} | it for i, it in _load_json_cached(voice_file).items()
+            }
         except (OSError,json.JSONDecodeError):
             pass
     return voice_list
 
 
 def get_qwen3tts_rolelist():
-    voices=json.loads(Path(ROOT_DIR+"/videotrans/voicejson/qwen3tts.json").read_text(encoding='utf-8'))
+    voices=_load_json_cached(ROOT_DIR+"/videotrans/voicejson/qwen3tts.json")
     voices={"No":"No"}|voices
     return voices
 
@@ -208,13 +235,13 @@ def get_qwenttslocal_rolelist():
     return voices
 
 def get_supertonic_rolelist():
-    voices=json.loads(Path(ROOT_DIR+"/videotrans/voicejson/supertonic.json").read_text(encoding='utf-8'))
+    voices=_load_json_cached(ROOT_DIR+"/videotrans/voicejson/supertonic.json")
     voices={"No":"No"}|voices
     return voices
 
 
 def get_glmtts_rolelist():
-    voices=json.loads(Path(ROOT_DIR+"/videotrans/voicejson/glmtts.json").read_text(encoding='utf-8'))
+    voices=_load_json_cached(ROOT_DIR+"/videotrans/voicejson/glmtts.json")
     voices={"No":"No"}|voices
     return voices
 

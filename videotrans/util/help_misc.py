@@ -11,6 +11,44 @@ from videotrans.configure import config
 from videotrans.configure.config import tr,params,settings,app_cfg,logger,ROOT_DIR,TEMP_DIR,defaulelang
 import tqdm 
 
+_TEXT_CACHE = {}
+
+
+def _get_file_signature(file_path):
+    path = Path(file_path)
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return path.resolve().as_posix(), stat.st_mtime_ns, stat.st_size
+
+
+def _read_text_cached(file_path):
+    signature = _get_file_signature(file_path)
+    if not signature:
+        return ""
+    cache_key = signature[0]
+    cached = _TEXT_CACHE.get(cache_key)
+    if cached and cached["signature"] == signature:
+        return cached["content"]
+
+    content = Path(file_path).read_text(encoding='utf-8', errors="ignore")
+    _TEXT_CACHE[cache_key] = {"signature": signature, "content": content}
+    return content
+
+
+def _clear_text_cache(file_path):
+    try:
+        cache_key = Path(file_path).resolve().as_posix()
+    except OSError:
+        return
+    _TEXT_CACHE.pop(cache_key, None)
+
+
+def _get_glossary_text():
+    glossary_file = ROOT_DIR + '/videotrans/glossary.txt'
+    return _read_text_cached(glossary_file).strip() if Path(glossary_file).exists() else ''
+
 
 def create_tqdm_class(callback):
     class QtAwareTqdm(tqdm.tqdm):   
@@ -188,10 +226,8 @@ def shutdown_system():
 def get_prompt(ainame,aisendsrt=True):
 
     prompt_file = get_prompt_file(ainame=ainame,aisendsrt=aisendsrt)
-    content = Path(prompt_file).read_text(encoding='utf-8',errors="ignore")
-    glossary = ''
-    if Path(ROOT_DIR + '/videotrans/glossary.txt').exists():
-        glossary = Path(ROOT_DIR + '/videotrans/glossary.txt').read_text(encoding='utf-8',errors="ignore").strip()
+    content = _read_text_cached(prompt_file)
+    glossary = _get_glossary_text()
     if glossary:
         glossary = "\n".join(["|" + it.replace("=", '|') + "|" for it in glossary.split('\n')])
         glossary_prompt = """\n\n# Glossary of terms\nTranslations are made strictly according to the following glossary. If a term appears in a sentence, the corresponding translation must be used, not a free translation:\n| Glossary | Translation |\n| --------- | ----- |\n"""
@@ -200,16 +236,14 @@ def get_prompt(ainame,aisendsrt=True):
 
 
 def qwenmt_glossary():
-
-    if Path(ROOT_DIR + '/videotrans/glossary.txt').exists():
-        glossary = Path(ROOT_DIR + '/videotrans/glossary.txt').read_text(encoding='utf-8',errors="ignore").strip()
-        if glossary:
-            term=[]
-            for it in glossary.split('\n'):
-                tmp=it.split("=")
-                if len(tmp)==2:
-                    term.append({"source":tmp[0],"target":tmp[1]})
-            return term if len(term)>0 else None
+    glossary = _get_glossary_text()
+    if glossary:
+        term=[]
+        for it in glossary.split('\n'):
+            tmp=it.split("=")
+            if len(tmp)==2:
+                term.append({"source":tmp[0],"target":tmp[1]})
+        return term if len(term)>0 else None
     return None
 
 # 获取当前需要操作的prompt txt文件
@@ -263,6 +297,7 @@ def show_glossary_editor(parent):
         try:
             with open(file_path, "w", encoding="utf-8",errors="ignore") as f:
                 f.write(text_edit.toPlainText())  # toPlainText 获取纯文本
+            _clear_text_cache(file_path)
             dialog.accept()
         except Exception as e:
             print(f"写入文件失败: {e}")

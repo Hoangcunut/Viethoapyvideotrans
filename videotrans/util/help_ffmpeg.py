@@ -1,4 +1,3 @@
-import copy
 import json
 import re
 import platform
@@ -207,11 +206,11 @@ def runffmpeg(arg, *, noextname=None, uuid=None, force_cpu=True,cmd_dir=None):
     """
     if settings.get('force_lib'):
         force_cpu=True
-    arg_copy = copy.deepcopy(arg)
+    arg_copy = list(arg)
 
     default_codec = f"libx{settings.get('video_codec', '265')}"
 
-    final_args = arg
+    final_args = list(arg)
     #hw_decode_opts = []
 
     # 如果 crf < 10 则直接强制使用软编码
@@ -232,7 +231,7 @@ def runffmpeg(arg, *, noextname=None, uuid=None, force_cpu=True,cmd_dir=None):
             app_cfg.video_codec = get_video_codec()
         if app_cfg.video_codec and 'libx' not in app_cfg.video_codec:
             logger.debug(f"检测到硬件编码器 {app_cfg.video_codec}，正在调整参数...")
-            final_args = _build_hw_command(arg, app_cfg.video_codec)
+            final_args = _build_hw_command(final_args, app_cfg.video_codec)
 
 
     cmd = ['ffmpeg', "-hide_banner", "-ignore_unknown",'-threads','0']
@@ -482,6 +481,7 @@ def _run_ffprobe_internal(cmd: list[str]) -> str:
     """
     (内部函数) 执行 ffprobe 命令并返回其标准输出。
     """
+    cmd = list(cmd)
     # 确保文件路径参数已转换为 POSIX 风格字符串，以获得更好的兼容性
     if Path(cmd[-1]).is_file():
         cmd[-1] = Path(cmd[-1]).as_posix()

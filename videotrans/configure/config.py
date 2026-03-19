@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import tempfile
+from collections import deque
 from functools import lru_cache
 from pathlib import Path
 from queue import Queue
@@ -129,7 +130,7 @@ class AppCfg:
     # 队列与控制
     stoped_uuid_set: set = field(default_factory=set)
     uuid_logs_queue: Dict = field(default_factory=dict)
-    global_msg: List = field(default_factory=list)
+    global_msg: Any = field(default_factory=deque)
     exit_soft: bool = False
 
     # 窗口与UI
